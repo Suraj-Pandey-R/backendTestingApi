@@ -20,5 +20,4 @@ public class RefressTokenDto {
         private String gender ;
         private String eaadhaar ;
         private String reference_key ;
-
 }

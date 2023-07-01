@@ -1,4 +1,5 @@
 package com.example.demo.controller;
+import com.example.demo.model.TakeData;
 import com.example.demo.service.Service1;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -26,5 +27,10 @@ public class MyContoller {
     public String refressToken(@PathVariable("token") String token){
         log.info("---------------------- calling refress token api");
         return service.refressAccessToken(token);
+    }
+
+    @GetMapping("/takedata")
+    public TakeData getAccesDataAndToken(){
+        return service.tempdata();
     }
 }

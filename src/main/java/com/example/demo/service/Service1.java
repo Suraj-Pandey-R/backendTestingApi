@@ -6,7 +6,10 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -16,6 +19,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -23,6 +27,8 @@ import java.util.List;
 public class Service1 {
 
     private HttpClient httpClient = HttpClient.newHttpClient();
+
+    private TakeData takeData ;
 
 
     public String getAccessTokenApi(String code, String code_challenge) {
@@ -33,7 +39,6 @@ public class Service1 {
                 URLEncoder.encode("eb25a081b28750063826", StandardCharsets.UTF_8),
                 URLEncoder.encode("https://first.d1ds8gytdtrzs9.amplifyapp.com/call", StandardCharsets.UTF_8),
                 URLEncoder.encode(code_challenge, StandardCharsets.UTF_8));
-        log.info("------------------------------------------{}---", requestBody);
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://digilocker.meripehchaan.gov.in/public/oauth2/2/token"))
                 .header("Accept", "application/json")
@@ -53,13 +58,7 @@ public class Service1 {
             throw new RuntimeException(e);
         }
         log.info("-----------------------------at last i am here before ----------------------{} ", response);
-        log.info("------------------------empty-------------------------");
         log.info("-----------------------------file{}-------------", response.body());
-        log.info("--------------------------------------1{}-----------------------------", response.request());
-        log.info("--------------------------------------2{}-----------------------------", response.statusCode());
-        log.info("--------------------------------------3{}-----------------------------", response.uri());
-        log.info("--------------------------------------4{}-----------------------------", response.sslSession());
-        log.info("-----------------------------to string {}--------------------------------", response.toString());
         AccessTokenDto accessTokenDto =  convertJsonStringToObjectType(response.body(), AccessTokenDto.class);
         log.info("----------------------- succesful access token details converted value {}", accessTokenDto);
         log.info("------------------------- call to get userDetailsService");
@@ -78,15 +77,6 @@ public class Service1 {
             throw new RuntimeException(e);
         } catch (JsonProcessingException e) {
             log.info("------------------------------json processing exception");
-            throw new RuntimeException(e);
-        }
-    }
-    public <T> List<T> convertJsonArrayToObjectType(String jsonArray, Class<T> clazz) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        try {
-            JavaType type = objectMapper.getTypeFactory().constructCollectionType(List.class, clazz);
-            return objectMapper.readValue(jsonArray, type);
-        } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }
@@ -137,8 +127,19 @@ public class Service1 {
         log.info("-----------------------------list of json format {}", items);
         log.info("----------------------------- calling each to check");
         List<Items> ls = items.getItems();
+        log.info("------------------------------acccesstoken, file uri {}, {}" ,accessToken, items.getItems().get(0).getUri());
         log.info("---------------------------calling the file from uri");
         getFileFromURI(accessToken, items.getItems().get(0).getUri());
+        log.info("----------------------------------------- old api to get data");
+        getFileFromURI2(accessToken, items.getItems().get(0).getUri());
+        log.info("----------------------------------------------- get file uri deployment");
+        log.info("----------------------------------------------get data in xml format");
+        getFileFromURI3(accessToken, items.getItems().get(0).getUri());
+        savePdfToDesktop(accessToken, items.getItems().get(0).getUri());
+        savePdfToDesktop2(accessToken, items.getItems().get(0).getUri());
+//        getDatainXMLformat(accessToken, items.getItems().get(0).getUri());
+//        log.info("-------------------------------------------cml data");
+//        getDatainXMLformat(accessToken, items.getItems().get(2).getUri());
     }
 
     public String refressAccessToken(String accessToken){
@@ -193,11 +194,42 @@ public class Service1 {
         log.info("------------------------{}", httpResponse.headers());
         log.info("-------------------------{}", httpResponse.body());
     }
+    public void getFileFromURI3(String accessToken, String fileUrl) {
+        log.info("---------------------------inside get file from URI");
+        log.info("---------------------------content loaded for frontend");
+        log.info("---------------------------content loaded for frontend");
+        log.info("---------------------------content loaded for frontend");
+        log.info("---------------------------content loaded for frontend");
+        takeData.setUri(fileUrl);
+        takeData.setBearer(accessToken);
+        String url = "https://digilocker.meripehchaan.gov.in/public/oauth2/1/file/" + fileUrl + ".pdf";
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Accept", "application/pdf")
+                .header("Authorization", "Bearer " + accessToken)
+                .GET().build();
+        HttpResponse<String> httpResponse = null;
+        try{
+            httpResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        }
+        catch (Exception e){
+            log.info("----------------------------in catch exception is here");
+        }
+        log.info("--------------------------{}", httpResponse);
+        log.info("---------------------------{}", httpResponse.body());
+        log.info("---------------------------{}", httpResponse.headers());
+    }
 
     //    Get File from URI
     public void getFileFromURI(String accessToken, String fileUrl){
         log.info("---------------------------inside get file from URI");
-        String url = "https://digilocker.meripehchaan.gov.in/public/oauth2/1/file/"+ fileUrl;
+        log.info("---------------------------content loaded for frontend");
+        log.info("---------------------------content loaded for frontend");
+        log.info("---------------------------content loaded for frontend");
+        log.info("---------------------------content loaded for frontend");
+        takeData.setUri(fileUrl);
+        takeData.setBearer(accessToken);
+        String url = "https://digilocker.meripehchaan.gov.in/public/oauth2/1/file/"+ fileUrl ;
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .header("Accept", "application/pdf")
@@ -205,6 +237,8 @@ public class Service1 {
                 .GET().build();
         HttpResponse<String> httpResponse = null ;
         HttpResponse<InputStream> httpm = null;
+        log.info("---------------------------------calling to another file");
+        getFileFromURI2(accessToken, fileUrl);
         try{
             httpm = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
         }
@@ -226,4 +260,179 @@ public class Service1 {
         log.info("---------------------------{}", httpResponse.body());
         log.info("---------------------------{}", httpResponse.headers());
     }
+
+    public void getFileFromURI2(String accessToken, String fileUrl){
+        log.info("---------------------------second part of inside get file from URI ");
+        String url = "https://api.digitallocker.gov.in/public/oauth2/1/file/"+ fileUrl;
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Accept", "application/pdf")
+                .header("Authorization", "Bearer " + accessToken)
+                .GET().build();
+        HttpResponse<InputStream> httpm = null;
+        try{
+            httpm = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
+        }
+        catch (Exception e){
+            log.info("------------------------------exception in input stream");
+        }
+
+        log.info("----------==///////////////========-first data ");
+        log.info("---------------------------{}", httpm);
+        log.info("-----------------------------{}", httpm.headers());
+        log.info("------------------------------{}", httpm.body());
+    }
+
+//    pull document api
+//    public void pullDocumentApi(String accessToken){
+//        log.info("---------------------------------- inside the get aadhaar in xml");
+//        String requestBody = String.format("orgid=%s&doctype=%s&consent=%s&panno=%s&PANFullName=%s",
+//                URLEncoder.encode("001891", StandardCharsets.UTF_8),
+//                URLEncoder.encode("PANCR" , StandardCharsets.UTF_8),
+//                URLEncoder.encode("Y", StandardCharsets.UTF_8),
+//                URLEncoder.encode("DRGPK1162K", StandardCharsets.UTF_8),
+//                URLEncoder.encode("", StandardCharsets.UTF_8));
+//        HttpRequest request = HttpRequest.newBuilder()
+//                .uri(URI.create("https://digilocker.meripehchaan.gov.in/public/oauth2/1/pull/pulldocument"))
+//                .header("Accept", "application/json")
+//                .header("Content-Type", "application/x-www-form-urlencoded")
+//                .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+//                .build();
+//        HttpResponse<String> httpResponse = null ;
+//        try{
+//            httpResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+//        }
+//        catch (Exception e){
+//            log.info("----------------------------in catch exception is here");
+//        }
+//        log.info("------------------------{}", httpResponse);
+//        log.info("------------------------{}", httpResponse.headers());
+//        log.info("-------------------------{}", httpResponse.body());
+//    }
+
+//    Get Certificate Data in XML Format from URI
+    public void getDatainXMLformat(String accessToken, String uri){
+        String url = "https://digilocker.meripehchaan.gov.in/public/oauth2/1/xml/"+ uri ;
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Authorization", "Bearer " + accessToken)
+                .GET().build();
+        HttpResponse<String> httpResponse = null ;
+        try{
+            httpResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        }
+        catch (Exception e){
+            log.info("----------------------------in catch exception is here");
+        }
+        log.info("------------------------{}", httpResponse);
+        log.info("------------------------{}", httpResponse.headers());
+        log.info("-------------------------{}", httpResponse.body());
+    }
+    public TakeData tempdata(){
+        return takeData ;
+    }
+
+
+
+    public void savePdfToDesktop2(String acessToken, String uri) {
+        log.info("----------------------save pdf 2");
+        log.info("----------------------save pdf 2");
+        log.info("----------------------save pdf 2");
+        log.info("----------------------save pdf 2");
+        log.info("----------------------save pdf 2");
+        log.info("----------------------save pdf 2");
+        log.info("----------------------save pdf 2");
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setAccept(Collections.singletonList(MediaType.APPLICATION_PDF));
+        headers.set("Authorization", "Bearer <your-token>");
+
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+        try {
+            ResponseEntity<byte[]> response = restTemplate.exchange(
+                    "https://digilocker.meripehchaan.gov.in/public/oauth2/1/file/" + uri,
+                    HttpMethod.GET,
+                    entity,
+                    byte[].class
+            );
+
+            byte[] responseBody = response.getBody();
+            if (responseBody != null) {
+                log.info("--------------------------------inside pdf code {}", new String(responseBody));
+            } else {
+                log.info("--------------------------------inside pdf code: Response body is null");
+            }
+
+            if (response.getStatusCode() == HttpStatus.OK) {
+                byte[] pdfData = response.getBody();
+
+                // Generate a unique file name based on the current timestamp
+                String fileName = "/home/ubuntu/pdf_file_data/file_" + System.currentTimeMillis() + ".pdf";
+                // Save the received PDF file to the default directory
+                try (FileOutputStream fos = new FileOutputStream(fileName)) {
+                    fos.write(pdfData);
+                    System.out.println("PDF file saved successfully");
+                } catch (IOException e) {
+                    System.out.println("Failed to save PDF file");
+                    e.printStackTrace();
+                }
+            } else {
+                System.out.println("Failed to receive PDF file");
+            }
+        }
+        catch (Exception e){
+            log.info("----------------------exception is therer");
+        }
+
+    }
+    public void savePdfToDesktop(String acessToken, String uri) {
+        log.info("----------------------------------inside save pdf to desktop");
+        log.info("----------------------------------inside save pdf to desktop");
+        log.info("----------------------------------inside save pdf to desktop");
+        log.info("----------------------------------inside save pdf to desktop");
+        log.info("----------------------------------inside save pdf to desktop");
+        log.info("----------------------------------inside save pdf to desktop");
+        log.info("----------------------------------inside save pdf to desktop");
+        log.info("----------------------------------inside save pdf to desktop");
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setAccept(Collections.singletonList(MediaType.APPLICATION_PDF));
+        headers.set("Authorization", "Bearer <your-token>");
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+        try {
+            ResponseEntity<byte[]> response = restTemplate.exchange(
+                    "https://digilocker.meripehchaan.gov.in/public/oauth2/1/file/" + uri + ".pdf",
+                    HttpMethod.GET,
+                    entity,
+                    byte[].class
+            );
+            byte[] responseBody = response.getBody();
+            if (responseBody != null) {
+                log.info("--------------------------------inside pdf code {}", new String(responseBody));
+            } else {
+                log.info("--------------------------------inside pdf code: Response body is null");
+            }
+            if (response.getStatusCode() == HttpStatus.OK) {
+                byte[] pdfData = response.getBody();
+                // Generate a unique file name based on the current timestamp
+                String fileName = "/home/ubuntu/pdf_file_data/file_" + System.currentTimeMillis() + ".pdf";
+
+                // Save the received PDF file to the default directory
+                try (FileOutputStream fos = new FileOutputStream(fileName)) {
+                    fos.write(pdfData);
+                    System.out.println("PDF file saved successfully");
+                } catch (IOException e) {
+                    System.out.println("Failed to save PDF file");
+                    e.printStackTrace();
+                }
+            } else {
+                System.out.println("Failed to receive PDF file");
+            }
+        }
+        catch (Exception e){
+            log.info("----------------------exception is there");
+        }
+    }
+
+
 }
