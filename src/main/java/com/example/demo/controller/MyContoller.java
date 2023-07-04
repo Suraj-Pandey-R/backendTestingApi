@@ -2,6 +2,7 @@ package com.example.demo.controller;
 import com.example.demo.model.TakeData;
 import com.example.demo.service.Service1;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -17,7 +18,6 @@ public class MyContoller {
         log.info("-----------------------------some one is pinging hi -----------------------------------");
         return "Hi ping";
     }
-
     @GetMapping("/start")
     public String getCodeAndState(@RequestParam("code_challenge") String code_challenge , @RequestParam("code") String code){
         log.info("-------------------------------------inside the code");
@@ -28,9 +28,14 @@ public class MyContoller {
         log.info("---------------------- calling refress token api");
         return service.refressAccessToken(token);
     }
-
     @GetMapping("/takedata")
-    public TakeData getAccesDataAndToken(){
-        return service.tempdata();
+    public ResponseEntity<TakeData> getAccesDataAndToken(){
+        log.info("------------------------take data");
+        return ResponseEntity.ok(service.tempdata());
+    }
+    @GetMapping("/pandata")
+    public ResponseEntity<TakeData> getpanData(){
+        log.info("------------------------pan data");
+        return ResponseEntity.ok(service.getPanData());
     }
 }

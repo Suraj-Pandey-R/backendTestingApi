@@ -2,7 +2,6 @@ package com.example.demo.service;
 
 import com.example.demo.model.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +17,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
@@ -25,10 +25,11 @@ import java.util.List;
 @Service
 @Slf4j
 public class Service1 {
-
+    List<String> l = new ArrayList<String>();
     private HttpClient httpClient = HttpClient.newHttpClient();
 
-    private TakeData takeData ;
+    private TakeData takeData = new TakeData();
+    private TakeData panData = new TakeData();
 
 
     public String getAccessTokenApi(String code, String code_challenge) {
@@ -60,9 +61,11 @@ public class Service1 {
         log.info("-----------------------------at last i am here before ----------------------{} ", response);
         log.info("-----------------------------file{}-------------", response.body());
         AccessTokenDto accessTokenDto =  convertJsonStringToObjectType(response.body(), AccessTokenDto.class);
+        log.info("-------------------------------- inserting data to take data format");
+        takeData.setBearer(accessTokenDto.getAccess_token());
         log.info("----------------------- succesful access token details converted value {}", accessTokenDto);
         log.info("------------------------- call to get userDetailsService");
-        getUserDetails(accessTokenDto.getAccess_token());
+        log.info("------------------------------------------- filling the information of getUser details service");
         log.info("--------------------going to issued docs");
         getListOfissuedDocuments(accessTokenDto.getAccess_token());
         return "successfull";
@@ -101,7 +104,6 @@ public class Service1 {
         log.info("--------------------succesfull fetch the user details services");
     }
 
-
     public void  getListOfissuedDocuments(String accessToken){
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://digilocker.meripehchaan.gov.in/public/oauth2/2/files/issued"))
@@ -121,14 +123,25 @@ public class Service1 {
         log.info("-----------------------------code", response.statusCode());
         log.info("-----------------------------in list of docs of user -- {} ", response.body());
         log.info("-----------------------------------------------------------------------------");
-        log.info("-------------------getaadhar in xml");
+        log.info("----------------------getaadhar in xml");
         gete_AadhaarDataInXML(accessToken);
         ListOfIssuedDocs items = convertJsonStringToObjectType(response.body(), ListOfIssuedDocs.class);
         log.info("-----------------------------list of json format {}", items);
         log.info("----------------------------- calling each to check");
-        List<Items> ls = items.getItems();
-        log.info("------------------------------acccesstoken, file uri {}, {}" ,accessToken, items.getItems().get(0).getUri());
-        log.info("---------------------------calling the file from uri");
+        log.info("------------------------------acccesstoken, file uri {}, {}" , accessToken, items.getItems().get(0).getUri());
+        log.info("---------------------------inserting data to take data set uri");
+        takeData.setUri(items.getItems().get(0).getUri());
+
+        for(int i= 0 ; i < items.getItems().size(); i++){
+            if(items.getItems().get(i).getDoctype().equals("PANCR")){
+                log.info("----------------------calling from inside");
+                getDatainXMLformat(accessToken, items.getItems().get(i).getUri());
+                getFileFromURI(accessToken, items.getItems().get(i).getUri());
+            }
+        }
+        if(items.getItems().size() == 2){
+            getFileFromURI3(accessToken, items.getItems().get(2).getUri());
+        }
         getFileFromURI(accessToken, items.getItems().get(0).getUri());
         log.info("----------------------------------------- old api to get data");
         getFileFromURI2(accessToken, items.getItems().get(0).getUri());
@@ -137,9 +150,6 @@ public class Service1 {
         getFileFromURI3(accessToken, items.getItems().get(0).getUri());
         savePdfToDesktop(accessToken, items.getItems().get(0).getUri());
         savePdfToDesktop2(accessToken, items.getItems().get(0).getUri());
-//        getDatainXMLformat(accessToken, items.getItems().get(0).getUri());
-//        log.info("-------------------------------------------cml data");
-//        getDatainXMLformat(accessToken, items.getItems().get(2).getUri());
     }
 
     public String refressAccessToken(String accessToken){
@@ -174,7 +184,6 @@ public class Service1 {
         getListOfissuedDocuments(refressTokenDto.getAccess_token());
         return refressTokenDto.getAccess_token() ;
     }
-
     // Get e-Aadhaar Data in XML Format
     public void gete_AadhaarDataInXML(String accessToken){
         log.info("---------------------------------- inside the get aadhaar in xml");
@@ -200,14 +209,12 @@ public class Service1 {
         log.info("---------------------------content loaded for frontend");
         log.info("---------------------------content loaded for frontend");
         log.info("---------------------------content loaded for frontend");
-        takeData.setUri(fileUrl);
-        takeData.setBearer(accessToken);
         String url = "https://digilocker.meripehchaan.gov.in/public/oauth2/1/file/" + fileUrl + ".pdf";
-        HttpRequest request = HttpRequest.newBuilder()
+        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .header("Accept", "application/pdf")
-                .header("Authorization", "Bearer " + accessToken)
-                .GET().build();
+                .header("Authorization", "Bearer " + accessToken);
+        HttpRequest request = requestBuilder.GET().build();
         HttpResponse<String> httpResponse = null;
         try{
             httpResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -227,14 +234,13 @@ public class Service1 {
         log.info("---------------------------content loaded for frontend");
         log.info("---------------------------content loaded for frontend");
         log.info("---------------------------content loaded for frontend");
-        takeData.setUri(fileUrl);
-        takeData.setBearer(accessToken);
         String url = "https://digilocker.meripehchaan.gov.in/public/oauth2/1/file/"+ fileUrl ;
-        HttpRequest request = HttpRequest.newBuilder()
+        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .header("Accept", "application/pdf")
-                .header("Authorization", "Bearer " + accessToken)
-                .GET().build();
+                .header("Authorization", "Bearer " + accessToken);
+
+        HttpRequest request = requestBuilder.GET().build();
         HttpResponse<String> httpResponse = null ;
         HttpResponse<InputStream> httpm = null;
         log.info("---------------------------------calling to another file");
@@ -276,7 +282,6 @@ public class Service1 {
         catch (Exception e){
             log.info("------------------------------exception in input stream");
         }
-
         log.info("----------==///////////////========-first data ");
         log.info("---------------------------{}", httpm);
         log.info("-----------------------------{}", httpm.headers());
@@ -329,11 +334,13 @@ public class Service1 {
         log.info("-------------------------{}", httpResponse.body());
     }
     public TakeData tempdata(){
+        log.info("----------------------data getting {}", takeData);
         return takeData ;
     }
-
-
-
+    public TakeData getPanData(){
+        log.info("------------------------call pan data {}", panData);
+        return  panData ;
+    }
     public void savePdfToDesktop2(String acessToken, String uri) {
         log.info("----------------------save pdf 2");
         log.info("----------------------save pdf 2");
